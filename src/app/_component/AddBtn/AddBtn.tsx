@@ -1,4 +1,6 @@
 "use client";
+
+import AddToCart from "@/CartAction/addToCart.action"; // المسار حسب مشروعك
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import React, { useContext, useState } from "react";
@@ -6,31 +8,38 @@ import { CartContext } from "@/app/context/CartContext";
 
 export default function AddBtn({ id }: { id: string }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
-
   const { numberOfCartitem, setnumberOfCartitem } = useContext(CartContext)!;
 
   async function checkAddProduct(id: string) {
     try {
       setLoadingId(id);
 
-
-      toast.success("✅ Product added to cart!", { duration: 4000 , position: "top-center" });
-      setnumberOfCartitem(numberOfCartitem+1)
+      const res = await AddToCart(id); // استدعاء السيرفر
+      if (res.status === "success") {
+        toast.success("✅ Product added successfully", { position: "top-center", duration: 2000 });
+        setnumberOfCartitem(numberOfCartitem + 1);
+      } else {
+        toast.error("❌ Can't add product", { position: "top-center", duration: 2000 });
+      }
     } catch (error) {
       console.error(error);
-      toast.error("❌ Failed to add product", { duration: 4000 , position: "top-center" });
+      const errorMessage =
+        typeof error === "object" && error !== null && "message" in error
+          ? (error as { message?: string }).message
+          : undefined;
+      toast.error(`❌ ${errorMessage || "Failed to add product"}`, { position: "top-center", duration: 2000 });
+    } finally {
+      setLoadingId(null);
     }
   }
 
-  const isLoading = loadingId !== null;
+  const isLoading = loadingId === id;
 
   return (
     <Button
       onClick={() => checkAddProduct(id)}
       disabled={isLoading}
-      className={`w-[80%] mx-auto cursor-pointer ${
-        isLoading ? "bg-gray-600 cursor-not-allowed" : ""
-      }`}
+      className={`w-[80%] mx-auto cursor-pointer ${isLoading ? "bg-gray-600 cursor-not-allowed" : ""}`}
     >
       {isLoading ? (
         <span className="flex items-center gap-2">
