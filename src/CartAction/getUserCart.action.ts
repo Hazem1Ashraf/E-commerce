@@ -1,16 +1,36 @@
-"use server"
-import getMyToken from "@/utilities/getMyToken"
-import { toast } from "sonner"
+"use server";
+import getMyToken from "@/utilities/getMyToken";
+import { toast } from "sonner";
 
-export default async function getLoggedUserCart() {
+// حدد نوع الريسبونس المتوقع
+interface CartProduct {
+  _id: string;
+  count: number;
+  price: number;
+  product: {
+    _id: string;
+    title: string;
+    imageCover: string;
+  };
+}
+
+interface CartResponse {
+  status: string;
+  cartId: string;
+  data: {
+    products: CartProduct[];
+  };
+}
+
+export default async function getLoggedUserCart(): Promise<CartResponse | null> {
   try {
-    const token = await getMyToken()
+    const token = await getMyToken();
     if (!token) {
       toast.error("❌ Please login first", {
         duration: 2000,
         position: "top-center",
-      })
-      throw new Error("No token found")
+      });
+      return null;
     }
 
     const res = await fetch(`https://ecommerce.routemisr.com/api/v1/cart`, {
@@ -21,37 +41,34 @@ export default async function getLoggedUserCart() {
         token,
         "Content-Type": "application/json",
       },
-    })
+    });
 
     if (!res.ok) {
-      const errorText = await res.text()
-      toast.error(`❌ Error loading cart: ${res.status}`, {
+      toast.error(`❌ Cart API failed with status ${res.status}`, {
         duration: 2000,
         position: "top-center",
-      })
-      throw new Error(`Cart API failed: ${errorText}`)
+      });
+      return null;
     }
 
-    const contentType = res.headers.get("content-type")
-    if (!contentType?.includes("application/json")) {
-      const text = await res.text()
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await res.text(); // نقرأ الرد كـ نص عشان نفهم المشكلة
       toast.error("❌ Cart API returned invalid response", {
         duration: 2000,
         position: "top-center",
-      })
-      throw new Error(`Invalid response: ${text}`)
+      });
+      console.warn("Invalid Cart API Response:", text); // للديباج
+      return null;
     }
 
-    const payload = await res.json()
-    return payload
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "❌ Unknown error"
-
-    toast.error(`Failed to load cart: ${message}`, {
+    const payload: CartResponse = await res.json();
+    return payload;
+  } catch (error) {
+    toast.error("❌ Error fetching cart", {
       duration: 2000,
       position: "top-center",
-    })
-    throw error
+    });
+    return null;
   }
 }
