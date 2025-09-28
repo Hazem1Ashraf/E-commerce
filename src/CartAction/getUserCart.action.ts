@@ -1,11 +1,16 @@
 "use server"
-import getMyToken from "@/utilities/getMyToken";
+import getMyToken from "@/utilities/getMyToken"
+import { toast } from "sonner"
 
 export default async function getLoggedUserCart() {
   try {
     const token = await getMyToken()
     if (!token) {
-      return { success: false, message: "❌ Please login to view cart", data: null }
+      toast.error("❌ Please login first", {
+        duration: 2000,
+        position: "top-center",
+      })
+      throw new Error("No token found")
     }
 
     const res = await fetch(`https://ecommerce.routemisr.com/api/v1/cart`, {
@@ -20,30 +25,33 @@ export default async function getLoggedUserCart() {
 
     if (!res.ok) {
       const errorText = await res.text()
-      return {
-        success: false,
-        message: `❌ Cart API failed (${res.status})`,
-        data: null,
-      }
+      toast.error(`❌ Error loading cart: ${res.status}`, {
+        duration: 2000,
+        position: "top-center",
+      })
+      throw new Error(`Cart API failed: ${errorText}`)
     }
 
     const contentType = res.headers.get("content-type")
     if (!contentType?.includes("application/json")) {
-      return {
-        success: false,
-        message: "❌ Cart API returned invalid response",
-        data: null,
-      }
+      const text = await res.text()
+      toast.error("❌ Cart API returned invalid response", {
+        duration: 2000,
+        position: "top-center",
+      })
+      throw new Error(`Invalid response: ${text}`)
     }
 
     const payload = await res.json()
-    return { success: true, message: "✅ Cart loaded successfully", data: payload }
+    return payload
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "❌ Unknown error"
 
-  } catch (error: any) {
-    return {
-      success: false,
-      message: `❌ ${error.message || "Unknown error"}`,
-      data: null,
-    }
+    toast.error(`Failed to load cart: ${message}`, {
+      duration: 2000,
+      position: "top-center",
+    })
+    throw error
   }
 }
