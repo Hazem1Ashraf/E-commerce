@@ -9,6 +9,8 @@ if(!token){
 
 const res=await fetch(`https://ecommerce.routemisr.com/api/v1/cart`,{
     method:"GET",
+    cache: "no-store",
+    next: { revalidate: 0 },
     headers:{
         token,
         "Content-Type":"application/json",
