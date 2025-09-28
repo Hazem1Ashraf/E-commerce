@@ -8,14 +8,17 @@ export interface Product {
   quantity: number;
 }
 
-export interface CartResponse {
-  status: "success" | "error";
-  data?: {
-    products: Product[];
-  };
-  cartId?: string;
-  message?: string;
-}
+//  Union Type علشان TypeScript يفهم إن success لازم معاها data
+export type CartResponse =
+  | {
+      status: "success";
+      data: { products: Product[] };
+      cartId?: string;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
 
 export default async function getLoggedUserCart(): Promise<CartResponse> {
   try {
@@ -40,14 +43,14 @@ export default async function getLoggedUserCart(): Promise<CartResponse> {
       };
     }
 
-    const payload: CartResponse = await res.json();
+    const payload = (await res.json()) as CartResponse;
 
-    if (payload?.status === "success") {
+    if (payload.status === "success") {
       return payload;
     }
 
-    return { status: "error", message: payload?.message || "Unknown error" };
-  } catch (err) {
+    return { status: "error", message: payload.message || "Unknown error" };
+  } catch {
     return { status: "error", message: "Unexpected error occurred" };
   }
 }
