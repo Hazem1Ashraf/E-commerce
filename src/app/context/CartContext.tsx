@@ -28,7 +28,7 @@ export default function CartContextProvider({ children }: CartContextProviderPro
         setnumberOfCartitem(sum);
       }
     } catch {
-      toast.error("error fetching cart", { duration: 2000 ,position:"top-center"}); 
+      toast.error("please Login first To can See Your Cart 😍", { duration: 2000 ,position:"top-center"}); 
     }
   }
 
